@@ -1,6 +1,6 @@
 <?php
 
-namespace Recoded\LaravelSQS;
+namespace Recoded\LaravelSQS\Value;
 
 final readonly class SqsMessage
 {

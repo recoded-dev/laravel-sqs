@@ -1,28 +1,25 @@
 <?php
 
-namespace Tests\Support;
+namespace Tests\Value;
 
-use Illuminate\Support\Facades\Config;
-use Recoded\LaravelSQS\Support\SqsUrlHelper;
+use Recoded\LaravelSQS\Value\Queue;
 use Tests\TestCase;
 
-final class SqsUrlHelperTest extends TestCase
+final class QueueTest extends TestCase
 {
     /**
      * @dataProvider queueUrlConfigProvider
      */
     public function testItGeneratesCorrectly(string $prefix, string $name, ?string $suffix, string $fullUrl): void
     {
-        Config::set([
-            'sqs.queue.prefix' => $prefix,
-            'sqs.queue.name' => $name,
-            'sqs.queue.suffix' => $suffix,
-        ]);
+        $queue = new Queue(
+            key: 'foo',
+            prefix: $prefix,
+            name: $name,
+            suffix: $suffix,
+        );
 
-        /** @var \Recoded\LaravelSQS\Support\SqsUrlHelper $helper */
-        $helper = $this->app->make(SqsUrlHelper::class);
-
-        self::assertSame($fullUrl, $helper->getQueueUrl());
+        self::assertSame($fullUrl, $queue->getQueueUrl());
     }
 
     /**

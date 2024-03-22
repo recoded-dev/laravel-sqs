@@ -6,11 +6,12 @@ use Aws\Sqs\SqsClient;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Events\Dispatcher;
 use Recoded\LaravelSQS\Events\SqsMessageReceived;
-use Recoded\LaravelSQS\Support\SqsUrlHelper;
 use Recoded\LaravelSQS\Events\ProcessedSqsMessage;
 use Recoded\LaravelSQS\Events\ProcessingSqsMessage;
-use Recoded\LaravelSQS\SqsMessage;
+use Recoded\LaravelSQS\Value\SqsMessage;
+use Recoded\LaravelSQS\Value\Queue;
 use Throwable;
+use Webmozart\Assert\Assert;
 
 class WorkCommand extends Command
 {
@@ -19,7 +20,7 @@ class WorkCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'sqs:work';
+    protected $signature = 'sqs:work {queues?}';
 
     /**
      * The console command description.
@@ -29,38 +30,48 @@ class WorkCommand extends Command
     protected $description = 'Process the SQS queue';
 
     /**
-     * Prefix of the Queue URL.
-     *
-     * @var string
-     */
-    protected string $prefix;
-
-    /**
-     * Suffix of the Queue URL.
-     *
-     * @var string|null
-     */
-    protected ?string $suffix;
-
-    /**
      * Execute the console command.
      *
      * @param \Aws\Sqs\SqsClient $sqs
      * @param \Illuminate\Contracts\Events\Dispatcher $events
-     * @param \Recoded\LaravelSQS\Support\SqsUrlHelper $helper
      * @return void
      */
-    public function handle(SqsClient $sqs, Dispatcher $events, SqsUrlHelper $helper): void
+    public function handle(SqsClient $sqs, Dispatcher $events): void
     {
-        $queueUrl = $helper->getQueueUrl();
+        $queueNames = $this->argument('queues');
+
+        if (is_string($queueNames)) {
+            $queueNames = explode(',', $queueNames);
+        }
+
+        $queueNames ??= config('sqs.default_queues');
+
+        Assert::isArray($queueNames);
+
+        $queues = array_map(Queue::fromConfig(...), $queueNames);
 
         $this->getOutput()->success('Working');
 
         while (true) {
+            $this->work($sqs, $events, $queues);
+        }
+    }
+
+    /**
+     * Work all the queues.
+     *
+     * @param \Aws\Sqs\SqsClient $sqs
+     * @param \Illuminate\Contracts\Events\Dispatcher $events
+     * @param \Recoded\LaravelSQS\Value\Queue[] $queues
+     * @return void
+     */
+    private function work(SqsClient $sqs, Dispatcher $events, array $queues): void
+    {
+        foreach ($queues as $queue) {
             $response = $sqs->receiveMessage([
                 'AttributeNames' => ['ApproximateReceiveCount'],
                 'MaxNumberOfMessages' => 10,
-                'QueueUrl' => $queueUrl,
+                'QueueUrl' => $queueUrl = $queue->getQueueUrl(),
                 'WaitTimeSeconds' => 10,
             ]);
 
@@ -73,9 +84,9 @@ class WorkCommand extends Command
                 $message = SqsMessage::fromArray($message);
 
                 try {
-                    $events->dispatch(new ProcessingSqsMessage($message));
+                    $events->dispatch(new ProcessingSqsMessage($queue, $message));
 
-                    $propagated = $events->until(new SqsMessageReceived($message));
+                    $propagated = $events->until(new SqsMessageReceived($queue, $message));
 
                     if ($propagated !== false) {
                         $sqs->deleteMessage([
@@ -95,7 +106,7 @@ class WorkCommand extends Command
                         ]);
                     }
                 } finally {
-                    $events->dispatch(new ProcessedSqsMessage($message));
+                    $events->dispatch(new ProcessedSqsMessage($queue, $message));
                 }
             }
         }
