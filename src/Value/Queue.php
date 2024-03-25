@@ -15,6 +15,8 @@ final readonly class Queue
      * @param string|null $prefix
      * @param string $name
      * @param string|null $suffix
+     * @param int|null $maxNumberOfMessages
+     * @param int|null $waitTimeSeconds
      * @return void
      */
     public function __construct(
@@ -22,6 +24,8 @@ final readonly class Queue
         public ?string $prefix,
         public string $name,
         public ?string $suffix,
+        public ?int $maxNumberOfMessages,
+        public ?int $waitTimeSeconds,
     ) {
         //
     }
@@ -78,6 +82,8 @@ final readonly class Queue
             prefix: $config['prefix'] ?? null,
             name: $config['name'] ?? null,
             suffix: $config['suffix'] ?? null,
+            maxNumberOfMessages: $config['max_number_of_messages'] ?? null,
+            waitTimeSeconds: $config['wait_time_seconds'] ?? null,
         );
     }
 }

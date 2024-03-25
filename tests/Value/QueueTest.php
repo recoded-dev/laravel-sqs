@@ -17,6 +17,8 @@ final class QueueTest extends TestCase
             prefix: $prefix,
             name: $name,
             suffix: $suffix,
+            maxNumberOfMessages: null,
+            waitTimeSeconds: null,
         );
 
         self::assertSame($fullUrl, $queue->getQueueUrl());

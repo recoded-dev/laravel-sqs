@@ -68,12 +68,12 @@ class WorkCommand extends Command
     private function work(SqsClient $sqs, Dispatcher $events, array $queues): void
     {
         foreach ($queues as $queue) {
-            $response = $sqs->receiveMessage([
+            $response = $sqs->receiveMessage(array_filter([
                 'AttributeNames' => ['ApproximateReceiveCount'],
-                'MaxNumberOfMessages' => 10,
+                'MaxNumberOfMessages' => $queue->maxNumberOfMessages,
                 'QueueUrl' => $queueUrl = $queue->getQueueUrl(),
-                'WaitTimeSeconds' => 10,
-            ]);
+                'WaitTimeSeconds' => $queue->waitTimeSeconds,
+            ], fn (mixed $value) => $value !== null));
 
             if (!isset($response['Messages']) || !is_array($response['Messages'])) {
                 continue;
