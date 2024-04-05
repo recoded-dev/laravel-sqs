@@ -13,13 +13,13 @@
     "require": {
         "php": "^8.2",
         "aws/aws-sdk-php": "^3.300",
-        "illuminate/config": "^10.0",
-        "illuminate/console": "^10.0",
-        "illuminate/events": "^10.0",
+        "illuminate/config": "^10.0 || ^11.0",
+        "illuminate/console": "^10.0 || ^11.0",
+        "illuminate/events": "^10.0 || ^11.0",
         "webmozart/assert": "^1.11"
     },
     "require-dev": {
-        "orchestra/testbench": "^8.21",
+        "orchestra/testbench": "^8.21 || ^9.0",
         "phpstan/extension-installer": "^1.3",
         "phpstan/phpstan": "^1.10",
         "phpstan/phpstan-deprecation-rules": "^1.1",
